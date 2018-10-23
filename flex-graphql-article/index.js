@@ -69,7 +69,7 @@ const getAge = function (name) {
         .then(function (preparedResponse) {
             // We are sorry.
             if (!preparedResponse.success) {
-                return `Sorry. ${preparedResponse.messаге}`;
+                return `Sorry. ${preparedResponse.message}`;
             }
             // We are happy.
             return `Your friend - ${name}'s age is ${preparedResponse.message}.`;
