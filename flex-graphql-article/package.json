@@ -1,0 +1,15 @@
+{
+  "name": "flex-graphql-article",
+  "version": "1.0.0",
+  "description": "Article about GraphQL API on a Flex Service by Kinvey.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "graphql": "^14.0.2",
+    "kinvey-flex-sdk": "^3.1.2"
+  }
+}
