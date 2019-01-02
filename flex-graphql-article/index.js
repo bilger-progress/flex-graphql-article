@@ -26,7 +26,7 @@ let references = {
  * Since the Kinvey Flex SDK uses a callback pattern, we'll need to
  * wrap those in promises.
  * 
- * @param {Function} foo 
+ * @param { Function } foo 
  */
 const promisify = function (foo) {
     return new Promise(function (resolve, reject) {
@@ -45,7 +45,7 @@ const promisify = function (foo) {
  * Kinvey Collection and makes sure to prepare the correct message based
  * on the information found.
  * 
- * @param {String} name
+ * @param { String } name
  */
 const getAge = function (name) {
     return promisify(function (callback) {
@@ -75,6 +75,9 @@ const getAge = function (name) {
             return `Your friend - ${name}'s age is ${preparedResponse.message}.`;
         })
         .catch(function (error) {
+            // Flex Logger is a custom module for logging.
+            // Please check the link given below.
+            // https://devcenter.kinvey.com/nodejs/guides/flex-services#LoggingMessages
             references.flex.logger.error(error);
         });
 };
@@ -83,8 +86,8 @@ const getAge = function (name) {
  * Goes through a process of fetching the person's information from the
  * Kinvey Collection and makes sure to update that information.
  * 
- * @param {String} name 
- * @param {Number} age 
+ * @param { String } name 
+ * @param { Number } age 
  */
 const changeAge = function (name, age) {
     return promisify(function (callback) {
@@ -110,6 +113,9 @@ const changeAge = function (name, age) {
             return savedResult.age;
         })
         .catch(function (error) {
+            // Flex Logger is a custom module for logging.
+            // Please check the link given below.
+            // https://devcenter.kinvey.com/nodejs/guides/flex-services#LoggingMessages
             references.flex.logger.error(error);
         });
 };
