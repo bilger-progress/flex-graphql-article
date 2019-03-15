@@ -43,7 +43,8 @@ function promisify(func) {
  */
 function fetchFriendData(name, context) {
     const findPromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).find);
-        return findPromisified(new context.modules.Query().equalTo("name", name));
+    return findPromisified(new context.modules.Query().equalTo("name", name))
+        .then(data => data[0]);
 }
 
 /**
@@ -55,16 +56,17 @@ function fetchFriendData(name, context) {
 function getAge(name, context) {
     return fetchFriendData(name, context)
         .then((data) => {
-            if (!data[0] || !data[0].age) {
-                return `Sorry. You still have not set age for your friend - ${name}.`;
+            if (!data || !data.age) {
+                return `Sorry. You still have not set age for your friend - ${name}. You can do that now...`;
             }
-            return `Your friend - ${name}'s age is ${data[0].age}.`;
+            return `Your friend - ${name}'s age is ${data.age}.`;
         })
         .catch((error) => {
             // Flex Logger is a custom module for logging.
             // Please check the link given below.
             // https://devcenter.kinvey.com/nodejs/guides/flex-services#LoggingMessages
             context.flex.logger.error(error);
+            return Promise.reject(error);
         });
 };
 
@@ -79,11 +81,11 @@ function setAge(name, age, context) {
     return fetchFriendData(name, context)
         .then((data) => {
             const savePromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).save);
-            if (!data[0]) {
+            if (!data) {
                 return savePromisified({ name, age });
             }
-            data[0].age = age;
-            return savePromisified(data[0]);
+            data.age = age;
+            return savePromisified(data);
         })
         .then(data => data.age)
         .catch((error) => {
@@ -91,6 +93,7 @@ function setAge(name, age, context) {
             // Please check the link given below.
             // https://devcenter.kinvey.com/nodejs/guides/flex-services#LoggingMessages
             context.flex.logger.error(error);
+            return Promise.reject(error);
         });
 };
 
