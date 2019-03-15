@@ -1,6 +1,6 @@
 {
   "name": "flex-graphql-article",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "description": "Article about GraphQL API on a Flex Service by Kinvey.",
   "main": "index.js",
   "scripts": {

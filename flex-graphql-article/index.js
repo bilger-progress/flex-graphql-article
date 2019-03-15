@@ -23,9 +23,9 @@ const COLLECTION_NAME = "FriendsAges";
  * @param { Function } func 
  */
 function promisify(func) {
-    return (...arguments) => {
+    return (...args) => {
         return new Promise((resolve, reject) => {
-            return func(...arguments, (error, data) => {
+            func(...args, (error, data) => {
                 if (error) {
                     return reject(error);
                 }
@@ -39,24 +39,11 @@ function promisify(func) {
  * Fetch our Friend's data from the Kinvey Collection.
  * 
  * @param { String } name 
- * @param { Object } context
- * 
- * @returns { Promise } 
+ * @param { Object } context 
  */
 function fetchFriendData(name, context) {
-    return new Promise((resolve, reject) => {
-        const findPromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).find);
-        return findPromisified(new context.modules.Query().equalTo("name", name))
-            .then((data) => {
-                if (!data[0]) {
-                    return resolve(null);
-                }
-                return resolve(data[0]);
-            })
-            .catch((error) => {
-                return reject(error);
-            });
-    });
+    const findPromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).find);
+        return findPromisified(new context.modules.Query().equalTo("name", name));
 }
 
 /**
@@ -68,12 +55,12 @@ function fetchFriendData(name, context) {
 function getAge(name, context) {
     return fetchFriendData(name, context)
         .then((data) => {
-            if (data === null || !data.age) {
-                return `Sorry. You still have not set age for ${name}.`;
+            if (!data[0] || !data[0].age) {
+                return `Sorry. You still have not set age for your friend - ${name}.`;
             }
-            return `Your friend - ${name}'s age is ${data.age}.`;
+            return `Your friend - ${name}'s age is ${data[0].age}.`;
         })
-        .catch(function (error) {
+        .catch((error) => {
             // Flex Logger is a custom module for logging.
             // Please check the link given below.
             // https://devcenter.kinvey.com/nodejs/guides/flex-services#LoggingMessages
@@ -91,17 +78,15 @@ function getAge(name, context) {
 function setAge(name, age, context) {
     return fetchFriendData(name, context)
         .then((data) => {
-            let savePromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).save);
-            if (data === null) {
-                return savePromisified({ name: name, age: age });
+            const savePromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).save);
+            if (!data[0]) {
+                return savePromisified({ name, age });
             }
-            data.age = age;
-            return savePromisified(data);
+            data[0].age = age;
+            return savePromisified(data[0]);
         })
-        .then((data) => {
-            return data.age;
-        })
-        .catch(function (error) {
+        .then(data => data.age)
+        .catch((error) => {
             // Flex Logger is a custom module for logging.
             // Please check the link given below.
             // https://devcenter.kinvey.com/nodejs/guides/flex-services#LoggingMessages
@@ -166,7 +151,7 @@ kinveyFlexSDK.service((err, flex) => {
             contextValue: executionContext
         };
         // FIRE!
-        return graphql(graphqlArguments)
+        graphql(graphqlArguments)
             .then((data) => {
                 return complete().setBody(data).ok().next();
             }, (error) => {
