@@ -143,22 +143,15 @@ kinveyFlexSDK.service((err, flex) => {
          * differ. So, for each GraphQL request the respective function call's context needs
          * to be prepared.
          */
-        let executionContext = {
-            flex: flex,
-            context: context,
-            modules: modules
-        };
-        let graphqlArguments = {
-            schema: schema,
+        const executionContext = { flex, context, modules };
+        const graphqlArguments = {
+            schema,
             source: context.query.query,
             contextValue: executionContext
         };
         // FIRE!
         graphql(graphqlArguments)
-            .then((data) => {
-                return complete().setBody(data).ok().next();
-            }, (error) => {
-                return complete().setBody(error).runtimeError().done();
-            });
+            .then(data => complete().setBody(data).ok().next())
+            .catch(error => complete().setBody(error).runtimeError().done());
     });
 });
