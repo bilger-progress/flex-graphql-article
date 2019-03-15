@@ -23,9 +23,9 @@ const COLLECTION_NAME = "FriendsAges";
  * @param { Function } func 
  */
 function promisify(func) {
-    return (arguments) => {
+    return (...arguments) => {
         return new Promise((resolve, reject) => {
-            return func(arguments, (error, data) => {
+            return func(...arguments, (error, data) => {
                 if (error) {
                     return reject(error);
                 }
@@ -36,37 +36,42 @@ function promisify(func) {
 }
 
 /**
- * Goes through a process of fetching the person's information from the
- * Kinvey Collection and makes sure to prepare the correct message based
- * on the information found.
+ * Fetch our Friend's data from the Kinvey Collection.
  * 
- * @param { String } name
+ * @param { String } name 
+ * @param { Object } context
+ * 
+ * @returns { Promise } 
+ */
+function fetchFriendData(name, context) {
+    return new Promise((resolve, reject) => {
+        const findPromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).find);
+        return findPromisified(new context.modules.Query().equalTo("name", name))
+            .then((data) => {
+                if (!data[0]) {
+                    return resolve(null);
+                }
+                return resolve(data[0]);
+            })
+            .catch((error) => {
+                return reject(error);
+            });
+    });
+}
+
+/**
+ * Reveals to us what the age of a friend of ours is.
+ * 
+ * @param { String } name 
  * @param { Object } context
  */
-const getAge = function (name, context) {
-    let findPromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).find);
-    return findPromisified(new context.modules.Query().equalTo("name", name))
-        .then(function (result) {
-            // Handle the case when we do not have information in our Kinvey Collection.
-            if (!result[0] || !result[0].hasOwnProperty("age")) {
-                return {
-                    success: false,
-                    age: null
-                };
-            }
-            // We've found the friend. Their age is set.
-            return {
-                success: true,
-                age: result[0].age
-            };
-        })
-        .then(function (preparedResponse) {
-            // We are sorry.
-            if (!preparedResponse.success) {
+function getAge(name, context) {
+    return fetchFriendData(name, context)
+        .then((data) => {
+            if (data === null || !data.age) {
                 return `Sorry. You still have not set age for ${name}.`;
             }
-            // We are happy.
-            return `Your friend - ${name}'s age is ${preparedResponse.age}.`;
+            return `Your friend - ${name}'s age is ${data.age}.`;
         })
         .catch(function (error) {
             // Flex Logger is a custom module for logging.
@@ -77,28 +82,24 @@ const getAge = function (name, context) {
 };
 
 /**
- * Goes through a process of fetching the person's information from the
- * Kinvey Collection and makes sure to update that information.
+ * Sets the age of a friend of ours.
  * 
- * @param { String } name
- * @param { Number } age
- * @param { Object } context
+ * @param { String } name 
+ * @param { Number } age 
+ * @param { Object } context 
  */
-const changeAge = function (name, age, context) {
-    let findPromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).find);
-    return findPromisified(new context.modules.Query().equalTo("name", name))
-        .then(function (result) {
+function setAge(name, age, context) {
+    return fetchFriendData(name, context)
+        .then((data) => {
             let savePromisified = promisify(context.modules.dataStore().collection(COLLECTION_NAME).save);
-            if (!result[0]) {
-                // We cannot find this friend in our Kinvey Collection. Let's set them up.
+            if (data === null) {
                 return savePromisified({ name: name, age: age });
             }
-            // We've found this friend's record. Let's change their age.
-            result[0].age = age;
-            return savePromisified(result[0]);
+            data.age = age;
+            return savePromisified(data);
         })
-        .then(function (savedResult) {
-            return savedResult.age;
+        .then((data) => {
+            return data.age;
         })
         .catch(function (error) {
             // Flex Logger is a custom module for logging.
@@ -125,14 +126,14 @@ const schema = new GraphQLSchema({
     mutation: new GraphQLObjectType({
         name: "RootMutationType",
         fields: {
-            changeAge: {
+            setAge: {
                 args: {
                     name: { name: "name", type: new GraphQLNonNull(GraphQLString) },
                     age: { name: "age", type: new GraphQLNonNull(GraphQLInt) }
                 },
                 type: GraphQLString,
                 resolve(parent, args, context) {
-                    return changeAge(args.name, args.age, context);
+                    return setAge(args.name, args.age, context);
                 }
             }
         }
@@ -147,7 +148,7 @@ kinveyFlexSDK.service((err, flex) => {
         return;
     }
     // Register the Kinvey Flex Function.
-    flex.functions.register("query", function (context, complete, modules) {
+    flex.functions.register("query", (context, complete, modules) => {
         /**
          * Since Flex functions get executed within different contexts (app environments),
          * the information carried within the "context" and "modules" might 
@@ -166,9 +167,9 @@ kinveyFlexSDK.service((err, flex) => {
         };
         // FIRE!
         return graphql(graphqlArguments)
-            .then(function (result) {
-                return complete().setBody(result).ok().next();
-            }, function (error) {
+            .then((data) => {
+                return complete().setBody(data).ok().next();
+            }, (error) => {
                 return complete().setBody(error).runtimeError().done();
             });
     });
