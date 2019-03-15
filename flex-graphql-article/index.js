@@ -48,6 +48,20 @@ function fetchFriendData(name, context) {
 }
 
 /**
+ * Logs any errors occured while processing the request.
+ * 
+ * @param { Error } error 
+ * @param { Object } context
+ */
+function logPromiseError(error, context) {
+    // Flex Logger is a custom module for logging.
+    // Please check the link given below.
+    // https://devcenter.kinvey.com/nodejs/guides/flex-services#LoggingMessages
+    context.flex.logger.error(error);
+    return Promise.reject(error);
+}
+
+/**
  * Reveals to us what the age of a friend of ours is.
  * 
  * @param { String } name 
@@ -57,17 +71,11 @@ function getAge(name, context) {
     return fetchFriendData(name, context)
         .then((data) => {
             if (!data || !data.age) {
-                return `Sorry. You still have not set age for your friend - ${name}. You can do that now...`;
+                return `Sorry. You still have not set age for your friend - ${name}. You can do that now.`;
             }
             return `Your friend - ${name}'s age is ${data.age}.`;
         })
-        .catch((error) => {
-            // Flex Logger is a custom module for logging.
-            // Please check the link given below.
-            // https://devcenter.kinvey.com/nodejs/guides/flex-services#LoggingMessages
-            context.flex.logger.error(error);
-            return Promise.reject(error);
-        });
+        .catch(error => logPromiseError(error, context));
 };
 
 /**
@@ -88,13 +96,7 @@ function setAge(name, age, context) {
             return savePromisified(data);
         })
         .then(data => data.age)
-        .catch((error) => {
-            // Flex Logger is a custom module for logging.
-            // Please check the link given below.
-            // https://devcenter.kinvey.com/nodejs/guides/flex-services#LoggingMessages
-            context.flex.logger.error(error);
-            return Promise.reject(error);
-        });
+        .catch(error => logPromiseError(error, context));
 };
 
 // The query & mutation declarations to the schema.
@@ -143,11 +145,10 @@ kinveyFlexSDK.service((err, flex) => {
          * differ. So, for each GraphQL request the respective function call's context needs
          * to be prepared.
          */
-        const executionContext = { flex, context, modules };
         const graphqlArguments = {
             schema,
             source: context.query.query,
-            contextValue: executionContext
+            contextValue: { flex, context, modules }
         };
         // FIRE!
         graphql(graphqlArguments)
