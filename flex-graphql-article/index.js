@@ -138,7 +138,7 @@ kinveyFlexSDK.service((err, flex) => {
         return;
     }
     // Register the Kinvey Flex Function.
-    flex.functions.register("query", (context, complete, modules) => {
+    flex.functions.register("graphql", (context, complete, modules) => {
         /**
          * Since Flex functions get executed within different contexts (app environments),
          * the information carried within the "context" and "modules" might 
@@ -147,7 +147,7 @@ kinveyFlexSDK.service((err, flex) => {
          */
         const graphqlArguments = {
             schema,
-            source: context.query.query,
+            source: context.body.query,
             contextValue: { flex, context, modules }
         };
         // FIRE!
